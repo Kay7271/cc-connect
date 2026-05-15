@@ -20,7 +20,7 @@ import (
 	"github.com/chenhg5/cc-connect/core"
 )
 
-// opencodeSession manages multi-turn conversations with the OpenCode CLI.
+// opencodeSession manages multi-turn conversations with the Codefree-O CLI.
 // Each Send() launches a new `codefree-o run --format json` process
 // with --session for conversation continuity.
 type opencodeSession struct {
@@ -30,7 +30,7 @@ type opencodeSession struct {
 	mode              string
 	extraEnv          []string
 	events            chan core.Event
-	chatID            atomic.Value // stores string — OpenCode session ID
+	chatID            atomic.Value // stores string — Codefree-O session ID
 	ctx               context.Context
 	cancel            context.CancelFunc
 	wg                sync.WaitGroup
@@ -243,7 +243,7 @@ func (s *opencodeSession) readLoop(cmd *exec.Cmd, stdout io.ReadCloser, stderrBu
 	}
 }
 
-// OpenCode NDJSON event structure:
+// Codefree-O NDJSON event structure:
 //
 //	{ "type": "text|tool_use|reasoning|step_start|step_finish",
 //	  "part": { "type": "text|tool|reasoning|step-start|step-finish", ... } }
@@ -280,7 +280,7 @@ func (s *opencodeSession) handleText(raw map[string]any) {
 	metadata, _ := part["metadata"].(map[string]any)
 	synthetic, _ := part["synthetic"].(bool)
 
-	// Check for compaction_continue: this is OpenCode's auto-continuation signal.
+	// Check for compaction_continue: this is Codefree-O's auto-continuation signal.
 	// When received, we should NOT send EventText to engine, but mark that we expect
 	// a continuation (next step_start will start a new turn without EventResult).
 	if synthetic && metadata != nil {
@@ -320,7 +320,7 @@ func (s *opencodeSession) handleToolUse(raw map[string]any) {
 	input := extractToolInput(state)
 
 	if status == "completed" {
-		// OpenCode bundles call + result in one event; emit both for UI.
+		// Codefree-O bundles call + result in one event; emit both for UI.
 		useEvt := core.Event{Type: core.EventToolUse, ToolName: toolName, ToolInput: input}
 		select {
 		case s.events <- useEvt:
@@ -398,7 +398,7 @@ func (s *opencodeSession) handleError(raw map[string]any) {
 }
 
 // extractErrorMessage tries to pull a human-readable message from various
-// OpenCode error JSON shapes.
+// Codefree-O error JSON shapes.
 func extractErrorMessage(raw map[string]any) string {
 	// Shape: {"error": {"data": {"message": "..."}, "name": "..."}}
 	if errObj, ok := raw["error"].(map[string]any); ok {
@@ -456,7 +456,7 @@ func (s *opencodeSession) handleStepFinish(raw map[string]any) {
 	slog.Debug("opencodeSession: step finished", "reason", reason, "session_id", s.CurrentSessionID())
 }
 
-// RespondPermission is a no-op — OpenCode handles permissions internally.
+// RespondPermission is a no-op — Codefree-O handles permissions internally.
 func (s *opencodeSession) RespondPermission(_ string, _ core.PermissionResult) error {
 	return nil
 }

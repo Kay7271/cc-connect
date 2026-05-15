@@ -27,7 +27,7 @@ func (errWriter) Write(_ []byte) (int, error) {
 func writeFakeModelsBin(t *testing.T, lines []string, exitCode int) string {
 	t.Helper()
 	tmpDir := t.TempDir()
-	name := filepath.Join(tmpDir, "fake-codefreeo")
+	name := filepath.Join(tmpDir, "fake-codefree-o")
 
 	var body strings.Builder
 	body.WriteString("#!/bin/sh\n")
@@ -113,7 +113,7 @@ func writePersistentModelCacheWithSnapshot(t *testing.T, cachePath string, snaps
 func writeBlockingModelsBin(t *testing.T, gatePath string, lines []string) string {
 	t.Helper()
 	tmpDir := t.TempDir()
-	name := filepath.Join(tmpDir, "fake-codefreeo")
+	name := filepath.Join(tmpDir, "fake-codefree-o")
 
 	var body strings.Builder
 	body.WriteString("#!/bin/sh\n")
@@ -137,7 +137,7 @@ func writeBlockingModelsBin(t *testing.T, gatePath string, lines []string) strin
 func writeCountingModelsBin(t *testing.T, countPath, gatePath string, lines []string, requireEnvKey string, exitCode int) string {
 	t.Helper()
 	tmpDir := t.TempDir()
-	name := filepath.Join(tmpDir, "fake-codefreeo")
+	name := filepath.Join(tmpDir, "fake-codefree-o")
 
 	var body strings.Builder
 	body.WriteString("#!/bin/sh\n")
@@ -1163,13 +1163,13 @@ func TestAvailableModels_IgnoresPersistentCacheForWorkDirMismatch(t *testing.T) 
 
 // ---------- DeleteSession tests ----------
 
-// writeFakeDeleteBin writes a temporary shell script that acts as a fake codefreeo CLI.
+// writeFakeDeleteBin writes a temporary shell script that acts as a fake codefree-o CLI.
 // When invoked with "session delete <id>", it either succeeds (exitCode=0) or fails.
 // If wantID is non-empty the script validates the session ID matches.
 func writeFakeDeleteBin(t *testing.T, wantID string, exitCode int, stderr string) string {
 	t.Helper()
 	tmpDir := t.TempDir()
-	name := filepath.Join(tmpDir, "fake-codefreeo")
+	name := filepath.Join(tmpDir, "fake-codefree-o")
 
 	var body strings.Builder
 	body.WriteString("#!/bin/sh\n")

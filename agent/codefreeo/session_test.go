@@ -11,15 +11,15 @@ import (
 	"github.com/chenhg5/cc-connect/core"
 )
 
-// TestOpencodeSessionEntry_Unmarshal verifies that OpenCode's
+// TestCodefreeOSessionEntry_Unmarshal verifies that Codefree-O's
 // `session list --format json` output can be correctly parsed.
 //
-// OpenCode returns `updated` and `created` as Unix timestamps in
+// Codefree-O returns `updated` and `created` as Unix timestamps in
 // milliseconds (int64), not strings. This test prevents regression
 // of the unmarshal error:
 //
 //	json: cannot unmarshal number into Go struct field opencodeSessionEntry.updated of type string
-func TestOpencodeSessionEntry_Unmarshal(t *testing.T) {
+func TestCodefreeOSessionEntry_Unmarshal(t *testing.T) {
 	jsonData := `[
   {
     "id": "ses_2eb11bb11ffeYwQZOj25mlmGMc",
@@ -33,7 +33,7 @@ func TestOpencodeSessionEntry_Unmarshal(t *testing.T) {
 
 	var entries []opencodeSessionEntry
 	if err := json.Unmarshal([]byte(jsonData), &entries); err != nil {
-		t.Fatalf("Failed to unmarshal OpenCode session list: %v", err)
+		t.Fatalf("Failed to unmarshal Codefree-O session list: %v", err)
 	}
 
 	if len(entries) != 1 {
@@ -55,10 +55,10 @@ func TestOpencodeSessionEntry_Unmarshal(t *testing.T) {
 	}
 }
 
-// TestNewOpencodeSession_ContinueSessionTreatedAsFresh verifies that
+// TestNewCodefreeOSession_ContinueSessionTreatedAsFresh verifies that
 // the ContinueSession sentinel (__continue__) is not passed as a literal
 // session ID to the CLI. This was fixed in PR #249.
-func TestNewOpencodeSession_ContinueSessionTreatedAsFresh(t *testing.T) {
+func TestNewCodefreeOSession_ContinueSessionTreatedAsFresh(t *testing.T) {
 	s, err := newOpencodeSession(context.Background(), "echo", "/tmp", "", "default", core.ContinueSession, nil)
 	if err != nil {
 		t.Fatalf("newOpencodeSession: %v", err)
@@ -70,7 +70,7 @@ func TestNewOpencodeSession_ContinueSessionTreatedAsFresh(t *testing.T) {
 	}
 }
 
-func TestOpencodeSessionStageImages(t *testing.T) {
+func TestCodefreeOSessionStageImages(t *testing.T) {
 	dir := t.TempDir()
 	s := &opencodeSession{workDir: dir}
 
@@ -100,7 +100,7 @@ func TestOpencodeSessionStageImages(t *testing.T) {
 	}
 }
 
-func TestOpencodeSessionBuildRunArgsIncludesImagesAsFiles(t *testing.T) {
+func TestCodefreeOSessionBuildRunArgsIncludesImagesAsFiles(t *testing.T) {
 	s := &opencodeSession{workDir: "/repo", model: "provider/model"}
 
 	got := s.buildRunArgs("describe these images", []string{"/tmp/a.png", "/tmp/b.jpg"}, "ses_123")

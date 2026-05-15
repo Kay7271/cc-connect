@@ -23,11 +23,11 @@ func init() {
 	core.RegisterAgent("codefree-o", New)
 }
 
-// Agent drives the OpenCode CLI in headless mode using `codefree-o run --format json`.
+// Agent drives the Codefree-O CLI in headless mode using `codefree-o run --format json`.
 //
 // Modes:
 //   - "default": standard mode
-//   - "yolo":    auto mode (codefreeo run is auto by default in non-interactive mode)
+//   - "yolo":    auto mode (codefree-o run is auto by default in non-interactive mode)
 type Agent struct {
 	workDir              string
 	model                string
@@ -78,7 +78,7 @@ func New(opts map[string]any) (core.Agent, error) {
 	}
 
 	if _, err := exec.LookPath(cmd); err != nil {
-		return nil, fmt.Errorf("codefree-o: %q CLI not found in PATH, install from: https://github.com/codefree-o/codefree-o", cmd)
+		return nil, fmt.Errorf("codefree-o: %q CLI not found in PATH, install codefree-o CLI first", cmd)
 	}
 
 	return &Agent{
@@ -636,7 +636,7 @@ func listOpencodeSessions(cmd, workDir string) ([]core.AgentSessionInfo, error) 
 }
 
 // querySessionMessageCounts uses the sqlite3 CLI to read message counts from
-// OpenCode's local database. Returns an empty map on any failure.
+// Codefree-O's local database. Returns an empty map on any failure.
 func querySessionMessageCounts() map[string]int {
 	dbPath := opencodeDBPath()
 	if dbPath == "" {
