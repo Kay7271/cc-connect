@@ -225,7 +225,7 @@ func (s *codefreeoSession) readLoop(cmd *exec.Cmd, stdout io.ReadCloser, stderrB
 	}
 
 	// Check if we received compaction_continue before readLoop ended.
-	// If so, OpenCode will continue with a new turn - do NOT send EventResult.
+	// If so, Codefree-O will continue with a new turn - do NOT send EventResult.
 	// The subsequent process will send its own EventResult when it finishes.
 	if s.expectingContinue.Load() {
 		slog.Info("codefreeoSession: readLoop ended after compaction_continue, skipping EventResult", "session_id", s.CurrentSessionID())
