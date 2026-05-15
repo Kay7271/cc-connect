@@ -17,6 +17,7 @@ const AGENT_OPTIONS = [
   { key: 'acp', label: 'ACP (Generic)' },
   { key: 'acp:openclaw', label: 'OpenClaw (ACP)' },
   { key: 'opencode', label: 'OpenCode' },
+  { key: 'codefree-o', label: 'Codefree-O' },
   { key: 'qoder', label: 'Qoder' },
 ];
 

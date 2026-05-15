@@ -88,9 +88,10 @@ npm install -g @iflow-ai/iflow-cli
 curl -fsSL https://qoder.com/install | bash
 ```
 
-For **Cursor Agent** and **OpenCode**, follow their official install docs:
+For **Cursor Agent**, **OpenCode**, and **Codefree-O**, follow their official install docs:
 - Cursor Agent: https://docs.cursor.com/agent
 - OpenCode: https://github.com/opencode-ai/opencode
+- Codefree-O: follow your Codefree-O CLI installation instructions
 
 Verify your selected agent works:
 
@@ -100,6 +101,7 @@ codex --version
 gemini --version
 iflow --version
 opencode --version
+codefree-o --version
 qodercli --version
 ```
 
@@ -143,7 +145,7 @@ level = "info"  # debug, info, warn, error
 name = "my-project"
 
 [projects.agent]
-type = "claudecode"  # or "codex", "cursor", "gemini", "qoder", "opencode", "iflow"
+type = "claudecode"  # or "codex", "cursor", "gemini", "qoder", "opencode", "codefree-o", "iflow"
 
 [projects.agent.options]
 work_dir = "/absolute/path/to/your/project"
@@ -498,7 +500,7 @@ cc-connect supports scheduled tasks (cron jobs). You can always create them via 
 
 **Claude Code** handles this automatically via `--append-system-prompt` — no extra setup needed.
 
-**For Codex, Cursor Agent, Qoder CLI, Gemini CLI, OpenCode, or iFlow CLI**, add the following instructions to the agent's project-level instruction file in your project's `work_dir`:
+**For Codex, Cursor Agent, Qoder CLI, Gemini CLI, OpenCode, Codefree-O, or iFlow CLI**, add the following instructions to the agent's project-level instruction file in your project's `work_dir`:
 
 | Agent | File to create/edit |
 |-------|-------------------|
@@ -507,6 +509,7 @@ cc-connect supports scheduled tasks (cron jobs). You can always create them via 
 | Qoder CLI | `AGENTS.md` |
 | Gemini CLI | `GEMINI.md` |
 | OpenCode | `OPENCODE.md` |
+| Codefree-O | `CODEFREE-O.md` |
 | iFlow CLI | `IFLOW.md` |
 
 **Content to add** (copy-paste into the file):
@@ -763,6 +766,7 @@ The following additional features are available:
 - **Gemini CLI**: Google Gemini CLI integration (`gemini -p --output-format stream-json`)
 - **Qoder CLI**: Qoder CLI integration (`qodercli -p -f stream-json`)
 - **OpenCode**: OpenCode CLI integration (`opencode run --format json`)
+- **Codefree-O**: Codefree-O CLI integration (`codefree-o run --format json`)
 - **iFlow CLI**: iFlow CLI integration (`iflow -i -r -o`)
 - **Voice Messages (STT)**: Speech-to-text via Whisper API (OpenAI / Groq / SiliconFlow). Requires `ffmpeg` and `[speech]` config.
 - **Voice Reply (TTS)**: Text-to-speech via Qwen TTS / OpenAI TTS. Requires `ffmpeg` and `[tts]` config.

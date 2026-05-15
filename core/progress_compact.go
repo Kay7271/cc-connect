@@ -348,6 +348,8 @@ func normalizeProgressAgentLabel(name string) string {
 		return "iFlow"
 	case "opencode":
 		return "OpenCode"
+	case "codefree-o", "codefreeo":
+		return "Codefree-O"
 	case "pi":
 		return "PI"
 	default:
