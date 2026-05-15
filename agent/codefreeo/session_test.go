@@ -18,7 +18,7 @@ import (
 // milliseconds (int64), not strings. This test prevents regression
 // of the unmarshal error:
 //
-//	json: cannot unmarshal number into Go struct field opencodeSessionEntry.updated of type string
+//	json: cannot unmarshal number into Go struct field codefreeoSessionEntry.updated of type string
 func TestCodefreeOSessionEntry_Unmarshal(t *testing.T) {
 	jsonData := `[
   {
@@ -31,7 +31,7 @@ func TestCodefreeOSessionEntry_Unmarshal(t *testing.T) {
   }
 ]`
 
-	var entries []opencodeSessionEntry
+	var entries []codefreeoSessionEntry
 	if err := json.Unmarshal([]byte(jsonData), &entries); err != nil {
 		t.Fatalf("Failed to unmarshal Codefree-O session list: %v", err)
 	}
@@ -59,9 +59,9 @@ func TestCodefreeOSessionEntry_Unmarshal(t *testing.T) {
 // the ContinueSession sentinel (__continue__) is not passed as a literal
 // session ID to the CLI. This was fixed in PR #249.
 func TestNewCodefreeOSession_ContinueSessionTreatedAsFresh(t *testing.T) {
-	s, err := newOpencodeSession(context.Background(), "echo", "/tmp", "", "default", core.ContinueSession, nil)
+	s, err := newCodefreeoSession(context.Background(), "echo", "/tmp", "", "default", core.ContinueSession, nil)
 	if err != nil {
-		t.Fatalf("newOpencodeSession: %v", err)
+		t.Fatalf("newCodefreeoSession: %v", err)
 	}
 	defer s.Close()
 
@@ -72,7 +72,7 @@ func TestNewCodefreeOSession_ContinueSessionTreatedAsFresh(t *testing.T) {
 
 func TestCodefreeOSessionStageImages(t *testing.T) {
 	dir := t.TempDir()
-	s := &opencodeSession{workDir: dir}
+	s := &codefreeoSession{workDir: dir}
 
 	prompt, imagePaths, err := s.stageImages("", []core.ImageAttachment{
 		{MimeType: "image/jpeg", Data: []byte{0xff, 0xd8, 0xff}},
@@ -101,7 +101,7 @@ func TestCodefreeOSessionStageImages(t *testing.T) {
 }
 
 func TestCodefreeOSessionBuildRunArgsIncludesImagesAsFiles(t *testing.T) {
-	s := &opencodeSession{workDir: "/repo", model: "provider/model"}
+	s := &codefreeoSession{workDir: "/repo", model: "provider/model"}
 
 	got := s.buildRunArgs("describe these images", []string{"/tmp/a.png", "/tmp/b.jpg"}, "ses_123")
 	want := []string{

@@ -20,10 +20,10 @@ import (
 	"github.com/chenhg5/cc-connect/core"
 )
 
-// opencodeSession manages multi-turn conversations with the Codefree-O CLI.
+// codefreeoSession manages multi-turn conversations with the Codefree-O CLI.
 // Each Send() launches a new `codefree-o run --format json` process
 // with --session for conversation continuity.
-type opencodeSession struct {
+type codefreeoSession struct {
 	cmd               string
 	workDir           string
 	model             string
@@ -38,10 +38,10 @@ type opencodeSession struct {
 	expectingContinue atomic.Bool // true when compaction_continue received, waiting for next step
 }
 
-func newOpencodeSession(ctx context.Context, cmd, workDir, model, mode, resumeID string, extraEnv []string) (*opencodeSession, error) {
+func newCodefreeoSession(ctx context.Context, cmd, workDir, model, mode, resumeID string, extraEnv []string) (*codefreeoSession, error) {
 	sessionCtx, cancel := context.WithCancel(ctx)
 
-	s := &opencodeSession{
+	s := &codefreeoSession{
 		cmd:      cmd,
 		workDir:  workDir,
 		model:    model,
@@ -60,7 +60,7 @@ func newOpencodeSession(ctx context.Context, cmd, workDir, model, mode, resumeID
 	return s, nil
 }
 
-func (s *opencodeSession) Send(prompt string, images []core.ImageAttachment, files []core.FileAttachment) error {
+func (s *codefreeoSession) Send(prompt string, images []core.ImageAttachment, files []core.FileAttachment) error {
 	if len(files) > 0 {
 		filePaths := core.SaveFilesToDisk(s.workDir, files)
 		prompt = core.AppendFileRefs(prompt, filePaths)
@@ -78,7 +78,7 @@ func (s *opencodeSession) Send(prompt string, images []core.ImageAttachment, fil
 
 	args := s.buildRunArgs(prompt, imagePaths, chatID)
 
-	slog.Debug("opencodeSession: launching", "resume", isResume, "args", core.RedactArgs(args))
+	slog.Debug("codefreeoSession: launching", "resume", isResume, "args", core.RedactArgs(args))
 
 	cmd := exec.CommandContext(s.ctx, s.cmd, args...)
 	cmd.Dir = s.workDir
@@ -90,14 +90,14 @@ func (s *opencodeSession) Send(prompt string, images []core.ImageAttachment, fil
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("opencodeSession: stdout pipe: %w", err)
+		return fmt.Errorf("codefreeoSession: stdout pipe: %w", err)
 	}
 
 	var stderrBuf bytes.Buffer
 	cmd.Stderr = &stderrBuf
 
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("opencodeSession: start: %w", err)
+		return fmt.Errorf("codefreeoSession: start: %w", err)
 	}
 
 	s.wg.Add(1)
@@ -106,23 +106,23 @@ func (s *opencodeSession) Send(prompt string, images []core.ImageAttachment, fil
 	return nil
 }
 
-func (s *opencodeSession) stageImages(prompt string, images []core.ImageAttachment) (string, []string, error) {
+func (s *codefreeoSession) stageImages(prompt string, images []core.ImageAttachment) (string, []string, error) {
 	if len(images) == 0 {
 		return prompt, nil, nil
 	}
 
 	imgDir := filepath.Join(s.workDir, ".cc-connect", "images")
 	if err := os.MkdirAll(imgDir, 0o755); err != nil {
-		return "", nil, fmt.Errorf("opencodeSession: create image dir: %w", err)
+		return "", nil, fmt.Errorf("codefreeoSession: create image dir: %w", err)
 	}
 
 	imagePaths := make([]string, 0, len(images))
 	for i, img := range images {
-		ext := opencodeImageExt(img.MimeType)
+		ext := codefreeoImageExt(img.MimeType)
 		fname := fmt.Sprintf("img_%d_%d%s", time.Now().UnixMilli(), i, ext)
 		fpath := filepath.Join(imgDir, fname)
 		if err := os.WriteFile(fpath, img.Data, 0o644); err != nil {
-			return "", nil, fmt.Errorf("opencodeSession: save image: %w", err)
+			return "", nil, fmt.Errorf("codefreeoSession: save image: %w", err)
 		}
 		imagePaths = append(imagePaths, fpath)
 	}
@@ -134,7 +134,7 @@ func (s *opencodeSession) stageImages(prompt string, images []core.ImageAttachme
 	return prompt, imagePaths, nil
 }
 
-func opencodeImageExt(mimeType string) string {
+func codefreeoImageExt(mimeType string) string {
 	switch mimeType {
 	case "image/jpeg":
 		return ".jpg"
@@ -147,7 +147,7 @@ func opencodeImageExt(mimeType string) string {
 	}
 }
 
-func (s *opencodeSession) buildRunArgs(prompt string, imagePaths []string, chatID string) []string {
+func (s *codefreeoSession) buildRunArgs(prompt string, imagePaths []string, chatID string) []string {
 	args := []string{"run", "--format", "json"}
 
 	if chatID != "" {
@@ -176,7 +176,7 @@ func (s *opencodeSession) buildRunArgs(prompt string, imagePaths []string, chatI
 	return args
 }
 
-func (s *opencodeSession) readLoop(cmd *exec.Cmd, stdout io.ReadCloser, stderrBuf *bytes.Buffer) {
+func (s *codefreeoSession) readLoop(cmd *exec.Cmd, stdout io.ReadCloser, stderrBuf *bytes.Buffer) {
 	defer s.wg.Done()
 	defer func() { _ = cmd.Wait() }()
 
@@ -191,7 +191,7 @@ func (s *opencodeSession) readLoop(cmd *exec.Cmd, stdout io.ReadCloser, stderrBu
 
 		var raw map[string]any
 		if err := json.Unmarshal([]byte(line), &raw); err != nil {
-			slog.Debug("opencodeSession: non-JSON line", "line", line)
+			slog.Debug("codefreeoSession: non-JSON line", "line", line)
 			continue
 		}
 
@@ -199,7 +199,7 @@ func (s *opencodeSession) readLoop(cmd *exec.Cmd, stdout io.ReadCloser, stderrBu
 	}
 
 	if err := scanner.Err(); err != nil {
-		slog.Error("opencodeSession: scanner error", "error", err)
+		slog.Error("codefreeoSession: scanner error", "error", err)
 		evt := core.Event{Type: core.EventError, Error: fmt.Errorf("read stdout: %w", err)}
 		select {
 		case s.events <- evt:
@@ -211,10 +211,10 @@ func (s *opencodeSession) readLoop(cmd *exec.Cmd, stdout io.ReadCloser, stderrBu
 
 	stderrMsg := stderrBuf.String()
 	if stderrMsg != "" {
-		slog.Error("opencodeSession: process error", "stderr", truncate(stderrMsg, 500))
+		slog.Error("codefreeoSession: process error", "stderr", truncate(stderrMsg, 500))
 		if strings.Contains(stderrMsg, "Session not found") {
 			s.chatID.Store("")
-			slog.Warn("opencodeSession: cleared stale session ID")
+			slog.Warn("codefreeoSession: cleared stale session ID")
 		}
 		evt := core.Event{Type: core.EventError, Error: fmt.Errorf("%s", stderrMsg)}
 		select {
@@ -228,14 +228,14 @@ func (s *opencodeSession) readLoop(cmd *exec.Cmd, stdout io.ReadCloser, stderrBu
 	// If so, OpenCode will continue with a new turn - do NOT send EventResult.
 	// The subsequent process will send its own EventResult when it finishes.
 	if s.expectingContinue.Load() {
-		slog.Info("opencodeSession: readLoop ended after compaction_continue, skipping EventResult", "session_id", s.CurrentSessionID())
+		slog.Info("codefreeoSession: readLoop ended after compaction_continue, skipping EventResult", "session_id", s.CurrentSessionID())
 		s.expectingContinue.Store(false)
 		return
 	}
 
 	// Emit EventResult after all steps are done and the process has finished writing.
 	sid := s.CurrentSessionID()
-	slog.Debug("opencodeSession: readLoop complete, sending fallback EventResult", "session_id", sid)
+	slog.Debug("codefreeoSession: readLoop complete, sending fallback EventResult", "session_id", sid)
 	evt := core.Event{Type: core.EventResult, SessionID: sid, Done: true}
 	select {
 	case s.events <- evt:
@@ -247,7 +247,7 @@ func (s *opencodeSession) readLoop(cmd *exec.Cmd, stdout io.ReadCloser, stderrBu
 //
 //	{ "type": "text|tool_use|reasoning|step_start|step_finish",
 //	  "part": { "type": "text|tool|reasoning|step-start|step-finish", ... } }
-func (s *opencodeSession) handleEvent(raw map[string]any) {
+func (s *codefreeoSession) handleEvent(raw map[string]any) {
 	eventType, _ := raw["type"].(string)
 
 	switch eventType {
@@ -265,11 +265,11 @@ func (s *opencodeSession) handleEvent(raw map[string]any) {
 		s.handleError(raw)
 	default:
 		b, _ := json.Marshal(raw)
-		slog.Debug("opencodeSession: unhandled event", "type", eventType, "raw", string(b))
+		slog.Debug("codefreeoSession: unhandled event", "type", eventType, "raw", string(b))
 	}
 }
 
-func (s *opencodeSession) handleText(raw map[string]any) {
+func (s *codefreeoSession) handleText(raw map[string]any) {
 	part, _ := raw["part"].(map[string]any)
 	if part == nil {
 		return
@@ -285,7 +285,7 @@ func (s *opencodeSession) handleText(raw map[string]any) {
 	// a continuation (next step_start will start a new turn without EventResult).
 	if synthetic && metadata != nil {
 		if cc, ok := metadata["compaction_continue"].(bool); ok && cc {
-			slog.Info("opencodeSession: compaction_continue detected, marking expectingContinue", "session_id", s.CurrentSessionID())
+			slog.Info("codefreeoSession: compaction_continue detected, marking expectingContinue", "session_id", s.CurrentSessionID())
 			s.expectingContinue.Store(true)
 			// Do NOT send EventText - this is internal continuation signal
 			return
@@ -302,7 +302,7 @@ func (s *opencodeSession) handleText(raw map[string]any) {
 	}
 }
 
-func (s *opencodeSession) handleToolUse(raw map[string]any) {
+func (s *codefreeoSession) handleToolUse(raw map[string]any) {
 	part, _ := raw["part"].(map[string]any)
 	if part == nil {
 		return
@@ -370,7 +370,7 @@ func extractToolInput(state map[string]any) string {
 	return ""
 }
 
-func (s *opencodeSession) handleReasoning(raw map[string]any) {
+func (s *codefreeoSession) handleReasoning(raw map[string]any) {
 	part, _ := raw["part"].(map[string]any)
 	if part == nil {
 		return
@@ -386,9 +386,9 @@ func (s *opencodeSession) handleReasoning(raw map[string]any) {
 	}
 }
 
-func (s *opencodeSession) handleError(raw map[string]any) {
+func (s *codefreeoSession) handleError(raw map[string]any) {
 	errMsg := extractErrorMessage(raw)
-	slog.Error("opencodeSession: agent error", "error", errMsg)
+	slog.Error("codefreeoSession: agent error", "error", errMsg)
 	evt := core.Event{Type: core.EventError, Error: fmt.Errorf("%s", errMsg)}
 	select {
 	case s.events <- evt:
@@ -438,7 +438,7 @@ func extractErrorMessage(raw map[string]any) string {
 	return string(b)
 }
 
-func (s *opencodeSession) handleStepStart(raw map[string]any) {
+func (s *codefreeoSession) handleStepStart(raw map[string]any) {
 	part, _ := raw["part"].(map[string]any)
 	if part == nil {
 		return
@@ -446,35 +446,35 @@ func (s *opencodeSession) handleStepStart(raw map[string]any) {
 	sessionID, _ := part["sessionID"].(string)
 	if sessionID != "" {
 		s.chatID.Store(sessionID)
-		slog.Debug("opencodeSession: session started", "session_id", sessionID)
+		slog.Debug("codefreeoSession: session started", "session_id", sessionID)
 	}
 }
 
-func (s *opencodeSession) handleStepFinish(raw map[string]any) {
+func (s *codefreeoSession) handleStepFinish(raw map[string]any) {
 	part, _ := raw["part"].(map[string]any)
 	reason, _ := part["reason"].(string)
-	slog.Debug("opencodeSession: step finished", "reason", reason, "session_id", s.CurrentSessionID())
+	slog.Debug("codefreeoSession: step finished", "reason", reason, "session_id", s.CurrentSessionID())
 }
 
 // RespondPermission is a no-op — Codefree-O handles permissions internally.
-func (s *opencodeSession) RespondPermission(_ string, _ core.PermissionResult) error {
+func (s *codefreeoSession) RespondPermission(_ string, _ core.PermissionResult) error {
 	return nil
 }
 
-func (s *opencodeSession) Events() <-chan core.Event {
+func (s *codefreeoSession) Events() <-chan core.Event {
 	return s.events
 }
 
-func (s *opencodeSession) CurrentSessionID() string {
+func (s *codefreeoSession) CurrentSessionID() string {
 	v, _ := s.chatID.Load().(string)
 	return v
 }
 
-func (s *opencodeSession) Alive() bool {
+func (s *codefreeoSession) Alive() bool {
 	return s.alive.Load()
 }
 
-func (s *opencodeSession) Close() error {
+func (s *codefreeoSession) Close() error {
 	s.alive.Store(false)
 	s.cancel()
 	done := make(chan struct{})
@@ -485,7 +485,7 @@ func (s *opencodeSession) Close() error {
 	select {
 	case <-done:
 	case <-time.After(8 * time.Second):
-		slog.Warn("opencodeSession: close timed out, abandoning wg.Wait")
+		slog.Warn("codefreeoSession: close timed out, abandoning wg.Wait")
 	}
 	close(s.events)
 	return nil

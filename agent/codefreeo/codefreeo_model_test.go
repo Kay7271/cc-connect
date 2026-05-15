@@ -70,7 +70,7 @@ func writePersistentModelCache(t *testing.T, cachePath string, models []core.Mod
 		t.Fatal(err)
 	}
 
-	defaultSnapshot := opencodeModelDiscoverySnapshot{workDir: "."}
+	defaultSnapshot := codefreeoModelDiscoverySnapshot{workDir: "."}
 	data, err := json.Marshal(persistentModelCache{Models: models, UpdatedAt: updatedAt, ContextKey: modelDiscoveryContextKey(defaultSnapshot)})
 	if err != nil {
 		t.Fatal(err)
@@ -81,7 +81,7 @@ func writePersistentModelCache(t *testing.T, cachePath string, models []core.Mod
 	return cachePath
 }
 
-func writePersistentModelCacheWithSnapshot(t *testing.T, cachePath string, snapshot opencodeModelDiscoverySnapshot, models []core.ModelOption, updatedAt time.Time) string {
+func writePersistentModelCacheWithSnapshot(t *testing.T, cachePath string, snapshot codefreeoModelDiscoverySnapshot, models []core.ModelOption, updatedAt time.Time) string {
 	t.Helper()
 
 	type persistentModelCache struct {
@@ -173,7 +173,7 @@ func waitForModelsInPersistentCache(t *testing.T, cachePath string, want []strin
 	t.Helper()
 	deadline := time.Now().Add(2 * time.Second)
 	for time.Now().Before(deadline) {
-		cache, err := loadOpencodePersistentModelCache(cachePath)
+		cache, err := loadCodefreeoPersistentModelCache(cachePath)
 		if err == nil && cache != nil && len(cache.Models) == len(want) {
 			match := true
 			for i, model := range cache.Models {
@@ -189,9 +189,9 @@ func waitForModelsInPersistentCache(t *testing.T, cachePath string, want []strin
 		time.Sleep(10 * time.Millisecond)
 	}
 
-	cache, err := loadOpencodePersistentModelCache(cachePath)
+	cache, err := loadCodefreeoPersistentModelCache(cachePath)
 	if err != nil {
-		t.Fatalf("loadOpencodePersistentModelCache(%q) error = %v", cachePath, err)
+		t.Fatalf("loadCodefreeoPersistentModelCache(%q) error = %v", cachePath, err)
 	}
 	t.Fatalf("persistent cache models = %v, want %v", cache, want)
 }
@@ -562,33 +562,33 @@ func TestAvailableModels_CustomCmdUsedForDiscovery(t *testing.T) {
 }
 
 func TestProjectModelCachePath_SanitizesProjectName(t *testing.T) {
-	got := opencodeProjectModelCachePath("/tmp/data", " ../team/demo project:alpha?beta ")
+	got := codefreeoProjectModelCachePath("/tmp/data", " ../team/demo project:alpha?beta ")
 	if filepath.Dir(got) != filepath.Join("/tmp/data", "projects") {
-		t.Fatalf("opencodeProjectModelCachePath() dir = %q, want %q", filepath.Dir(got), filepath.Join("/tmp/data", "projects"))
+		t.Fatalf("codefreeoProjectModelCachePath() dir = %q, want %q", filepath.Dir(got), filepath.Join("/tmp/data", "projects"))
 	}
 	base := filepath.Base(got)
 	if !strings.HasPrefix(base, "team-demo-project-alpha-beta-") {
-		t.Fatalf("opencodeProjectModelCachePath() base = %q, want sanitized prefix", base)
+		t.Fatalf("codefreeoProjectModelCachePath() base = %q, want sanitized prefix", base)
 	}
 	if !strings.HasSuffix(base, ".codefree-o-models.json") {
-		t.Fatalf("opencodeProjectModelCachePath() base = %q, want .codefree-o-models.json suffix", base)
+		t.Fatalf("codefreeoProjectModelCachePath() base = %q, want .codefree-o-models.json suffix", base)
 	}
 	hashSuffix := strings.TrimSuffix(strings.TrimPrefix(base, "team-demo-project-alpha-beta-"), ".codefree-o-models.json")
 	if len(hashSuffix) != 16 {
-		t.Fatalf("opencodeProjectModelCachePath() hash suffix = %q, want 16 hex chars", hashSuffix)
+		t.Fatalf("codefreeoProjectModelCachePath() hash suffix = %q, want 16 hex chars", hashSuffix)
 	}
 }
 
 func TestProjectModelCachePath_DistinguishesSanitizeCollisions(t *testing.T) {
-	pathA := opencodeProjectModelCachePath("/tmp/data", "team/demo")
-	pathB := opencodeProjectModelCachePath("/tmp/data", "team-demo")
+	pathA := codefreeoProjectModelCachePath("/tmp/data", "team/demo")
+	pathB := codefreeoProjectModelCachePath("/tmp/data", "team-demo")
 	if pathA == pathB {
-		t.Fatalf("opencodeProjectModelCachePath() collision: %q == %q", pathA, pathB)
+		t.Fatalf("codefreeoProjectModelCachePath() collision: %q == %q", pathA, pathB)
 	}
 }
 
 func TestLoadPersistentModelCache_NormalizesModels(t *testing.T) {
-	cachePath := opencodeProjectModelCachePath(t.TempDir(), "demo")
+	cachePath := codefreeoProjectModelCachePath(t.TempDir(), "demo")
 	writePersistentModelCache(t, cachePath, []core.ModelOption{
 		{Name: "  z-model  ", Desc: "z"},
 		{Name: ""},
@@ -598,12 +598,12 @@ func TestLoadPersistentModelCache_NormalizesModels(t *testing.T) {
 		{Name: "  m-model", Desc: "m"},
 	}, time.Now())
 
-	cache, err := loadOpencodePersistentModelCache(cachePath)
+	cache, err := loadCodefreeoPersistentModelCache(cachePath)
 	if err != nil {
-		t.Fatalf("loadOpencodePersistentModelCache() error = %v", err)
+		t.Fatalf("loadCodefreeoPersistentModelCache() error = %v", err)
 	}
 	if cache == nil {
-		t.Fatal("loadOpencodePersistentModelCache() = nil, want cache")
+		t.Fatal("loadCodefreeoPersistentModelCache() = nil, want cache")
 	}
 
 	got := cache.Models
@@ -623,7 +623,7 @@ func TestLoadPersistentModelCache_NormalizesModels(t *testing.T) {
 
 func TestNew_SurfacesPersistentModelCacheViaAvailableModels(t *testing.T) {
 	dataDir := t.TempDir()
-	cachePath := opencodeProjectModelCachePath(dataDir, "demo")
+	cachePath := codefreeoProjectModelCachePath(dataDir, "demo")
 	writePersistentModelCache(t, cachePath, []core.ModelOption{{Name: "cached/model"}}, time.Now())
 	fakeEmptyBin := writeFakeModelsBin(t, []string{}, 0)
 
@@ -648,7 +648,7 @@ func TestNew_SurfacesPersistentModelCacheViaAvailableModels(t *testing.T) {
 
 func TestAvailableModels_PrefersPersistentCacheOverDiscoveredModels(t *testing.T) {
 	dataDir := t.TempDir()
-	cachePath := opencodeProjectModelCachePath(dataDir, "demo")
+	cachePath := codefreeoProjectModelCachePath(dataDir, "demo")
 	writePersistentModelCache(t, cachePath, []core.ModelOption{{Name: "cached/model"}}, time.Now())
 	bin := writeFakeModelsBin(t, []string{"fresh/model"}, 0)
 
@@ -673,7 +673,7 @@ func TestAvailableModels_PrefersPersistentCacheOverDiscoveredModels(t *testing.T
 
 func TestAvailableModels_ReturnsPersistentCacheWhenDiscoveryFails(t *testing.T) {
 	dataDir := t.TempDir()
-	cachePath := opencodeProjectModelCachePath(dataDir, "demo")
+	cachePath := codefreeoProjectModelCachePath(dataDir, "demo")
 	writePersistentModelCache(t, cachePath, []core.ModelOption{{Name: "cached/model"}}, time.Now())
 	failingBin := writeFakeModelsBin(t, nil, 1)
 
@@ -715,13 +715,13 @@ func TestAvailableModels_PersistsDiscoveryOnColdStart(t *testing.T) {
 		t.Fatalf("AvailableModels() = %v, want discovered models", got)
 	}
 
-	cachePath := opencodeProjectModelCachePath(dataDir, "demo")
-	cache, err := loadOpencodePersistentModelCache(cachePath)
+	cachePath := codefreeoProjectModelCachePath(dataDir, "demo")
+	cache, err := loadCodefreeoPersistentModelCache(cachePath)
 	if err != nil {
-		t.Fatalf("loadOpencodePersistentModelCache(%q) error = %v", cachePath, err)
+		t.Fatalf("loadCodefreeoPersistentModelCache(%q) error = %v", cachePath, err)
 	}
 	if cache == nil {
-		t.Fatalf("loadOpencodePersistentModelCache(%q) = nil, want persisted cache", cachePath)
+		t.Fatalf("loadCodefreeoPersistentModelCache(%q) = nil, want persisted cache", cachePath)
 	}
 	if len(cache.Models) != 2 || cache.Models[0].Name != "fresh/model" || cache.Models[1].Name != "second/model" {
 		t.Fatalf("persisted cache models = %v, want discovered models", cache.Models)
@@ -735,7 +735,7 @@ func TestAvailableModels_PersistsDiscoveryOnColdStart(t *testing.T) {
 
 func TestAvailableModels_BackgroundRefreshUpdatesDiskCache(t *testing.T) {
 	dataDir := t.TempDir()
-	cachePath := opencodeProjectModelCachePath(dataDir, "demo")
+	cachePath := codefreeoProjectModelCachePath(dataDir, "demo")
 	writePersistentModelCache(t, cachePath, []core.ModelOption{{Name: "cached/model"}}, time.Now())
 	gatePath := filepath.Join(t.TempDir(), "refresh-ready")
 	bin := writeBlockingModelsBin(t, gatePath, []string{"fresh/model", "second/model"})
@@ -772,7 +772,7 @@ func TestAvailableModels_BackgroundRefreshUpdatesDiskCache(t *testing.T) {
 
 func TestAvailableModels_BackgroundRefreshFailurePreservesCache(t *testing.T) {
 	dataDir := t.TempDir()
-	cachePath := opencodeProjectModelCachePath(dataDir, "demo")
+	cachePath := codefreeoProjectModelCachePath(dataDir, "demo")
 	writePersistentModelCache(t, cachePath, []core.ModelOption{{Name: "cached/model"}}, time.Now())
 	countPath := filepath.Join(t.TempDir(), "refresh-count")
 	gatePath := filepath.Join(t.TempDir(), "refresh-ready")
@@ -797,9 +797,9 @@ func TestAvailableModels_BackgroundRefreshFailurePreservesCache(t *testing.T) {
 	}
 	waitForFileContent(t, countPath, "1")
 
-	cache, err := loadOpencodePersistentModelCache(cachePath)
+	cache, err := loadCodefreeoPersistentModelCache(cachePath)
 	if err != nil {
-		t.Fatalf("loadOpencodePersistentModelCache(%q) error = %v", cachePath, err)
+		t.Fatalf("loadCodefreeoPersistentModelCache(%q) error = %v", cachePath, err)
 	}
 	if cache == nil || len(cache.Models) != 1 || cache.Models[0].Name != "cached/model" {
 		t.Fatalf("persistent cache after failed refresh = %v, want cached/model preserved", cache)
@@ -812,7 +812,7 @@ func TestAvailableModels_BackgroundRefreshFailurePreservesCache(t *testing.T) {
 
 func TestAvailableModels_BackgroundRefreshSingleFlight(t *testing.T) {
 	dataDir := t.TempDir()
-	cachePath := opencodeProjectModelCachePath(dataDir, "demo")
+	cachePath := codefreeoProjectModelCachePath(dataDir, "demo")
 	writePersistentModelCache(t, cachePath, []core.ModelOption{{Name: "cached/model"}}, time.Now())
 	countPath := filepath.Join(t.TempDir(), "refresh-count")
 	gatePath := filepath.Join(t.TempDir(), "refresh-ready")
@@ -850,7 +850,7 @@ func TestAvailableModels_BackgroundRefreshSingleFlight(t *testing.T) {
 
 func TestStartInitialModelRefresh_UsesCurrentProviderWiring(t *testing.T) {
 	dataDir := t.TempDir()
-	cachePath := opencodeProjectModelCachePath(dataDir, "demo")
+	cachePath := codefreeoProjectModelCachePath(dataDir, "demo")
 	writePersistentModelCache(t, cachePath, []core.ModelOption{{Name: "cached/model"}}, time.Now())
 	countPath := filepath.Join(t.TempDir(), "refresh-count")
 	gatePath := filepath.Join(t.TempDir(), "refresh-ready")
@@ -883,7 +883,7 @@ func TestStartInitialModelRefresh_UsesCurrentProviderWiring(t *testing.T) {
 
 func TestStartInitialModelRefresh_PrewarmsColdStartCacheAfterProviderWiring(t *testing.T) {
 	dataDir := t.TempDir()
-	cachePath := opencodeProjectModelCachePath(dataDir, "demo")
+	cachePath := codefreeoProjectModelCachePath(dataDir, "demo")
 	countPath := filepath.Join(t.TempDir(), "refresh-count")
 	gatePath := filepath.Join(t.TempDir(), "refresh-ready")
 	bin := writeCountingModelsBin(t, countPath, gatePath, []string{"provider/model"}, "MODEL_DISCOVERY_TOKEN", 0)
@@ -904,8 +904,8 @@ func TestStartInitialModelRefresh_PrewarmsColdStartCacheAfterProviderWiring(t *t
 	if !a.SetActiveProvider("provider-a") {
 		t.Fatal("SetActiveProvider(provider-a) = false, want true")
 	}
-	if cache, err := loadOpencodePersistentModelCache(cachePath); err != nil {
-		t.Fatalf("loadOpencodePersistentModelCache(%q) error = %v", cachePath, err)
+	if cache, err := loadCodefreeoPersistentModelCache(cachePath); err != nil {
+		t.Fatalf("loadCodefreeoPersistentModelCache(%q) error = %v", cachePath, err)
 	} else if cache != nil {
 		t.Fatalf("persistent cache before prewarm = %v, want nil", cache)
 	}
@@ -940,7 +940,7 @@ func TestAvailableModels_DiscoveryUsesProviderEnv(t *testing.T) {
 
 func TestAvailableModels_PersistsProviderKeyOnColdStartDiscovery(t *testing.T) {
 	dataDir := t.TempDir()
-	cachePath := opencodeProjectModelCachePath(dataDir, "demo")
+	cachePath := codefreeoProjectModelCachePath(dataDir, "demo")
 	bin := writeCountingModelsBin(t, "", "", []string{"provider/model"}, "MODEL_DISCOVERY_TOKEN", 0)
 	a := &Agent{
 		cmd:            bin,
@@ -966,7 +966,7 @@ func TestAvailableModels_PersistsProviderKeyOnColdStartDiscovery(t *testing.T) {
 
 func TestAvailableModels_IgnoresPersistentCacheForProviderMismatch(t *testing.T) {
 	dataDir := t.TempDir()
-	cachePath := opencodeProjectModelCachePath(dataDir, "demo")
+	cachePath := codefreeoProjectModelCachePath(dataDir, "demo")
 	bin := writeFakeModelsBin(t, []string{"fresh/provider-b"}, 0)
 
 	agent, err := New(map[string]any{
@@ -979,13 +979,13 @@ func TestAvailableModels_IgnoresPersistentCacheForProviderMismatch(t *testing.T)
 	}
 	a := agent.(*Agent)
 	a.SetProviders([]core.ProviderConfig{{Name: "provider-a"}, {Name: "provider-b"}})
-	providerASnapshot := func() opencodeModelDiscoverySnapshot {
+	providerASnapshot := func() codefreeoModelDiscoverySnapshot {
 		a.activeIdx = 0
 		providerCacheKeyOf(t, a)
 		return a.modelDiscoverySnapshot()
 	}()
 	writePersistentModelCacheWithSnapshot(t, cachePath, providerASnapshot, []core.ModelOption{{Name: "cached/provider-a"}}, time.Now())
-	a.persistentModelCache = &opencodePersistentModelCache{Models: []core.ModelOption{{Name: "cached/provider-a"}}, UpdatedAt: time.Now(), ProviderKey: providerASnapshot.providerKey, ContextKey: modelDiscoveryContextKey(providerASnapshot)}
+	a.persistentModelCache = &codefreeoPersistentModelCache{Models: []core.ModelOption{{Name: "cached/provider-a"}}, UpdatedAt: time.Now(), ProviderKey: providerASnapshot.providerKey, ContextKey: modelDiscoveryContextKey(providerASnapshot)}
 	if !a.SetActiveProvider("provider-b") {
 		t.Fatal("SetActiveProvider(provider-b) = false, want true")
 	}
@@ -994,9 +994,9 @@ func TestAvailableModels_IgnoresPersistentCacheForProviderMismatch(t *testing.T)
 	if len(got) != 1 || got[0].Name != "fresh/provider-b" {
 		t.Fatalf("AvailableModels() = %v, want provider-mismatched cache ignored", got)
 	}
-	cache, err := loadOpencodePersistentModelCache(cachePath)
+	cache, err := loadCodefreeoPersistentModelCache(cachePath)
 	if err != nil {
-		t.Fatalf("loadOpencodePersistentModelCache(%q) error = %v", cachePath, err)
+		t.Fatalf("loadCodefreeoPersistentModelCache(%q) error = %v", cachePath, err)
 	}
 	if cache == nil || len(cache.Models) != 1 || cache.Models[0].Name != "fresh/provider-b" {
 		t.Fatalf("persistent cache after provider mismatch refresh = %v, want fresh/provider-b", cache)
@@ -1005,7 +1005,7 @@ func TestAvailableModels_IgnoresPersistentCacheForProviderMismatch(t *testing.T)
 
 func TestAvailableModels_BackgroundRefreshPersistsProviderKey(t *testing.T) {
 	dataDir := t.TempDir()
-	cachePath := opencodeProjectModelCachePath(dataDir, "demo")
+	cachePath := codefreeoProjectModelCachePath(dataDir, "demo")
 	gatePath := filepath.Join(t.TempDir(), "refresh-ready")
 	bin := writeCountingModelsBin(t, "", gatePath, []string{"fresh/model"}, "MODEL_DISCOVERY_TOKEN", 0)
 
@@ -1022,7 +1022,7 @@ func TestAvailableModels_BackgroundRefreshPersistsProviderKey(t *testing.T) {
 	providerAKey := providerCacheKeyOf(t, a)
 	providerASnapshot := a.modelDiscoverySnapshot()
 	writePersistentModelCacheWithSnapshot(t, cachePath, providerASnapshot, []core.ModelOption{{Name: "cached/model"}}, time.Now())
-	a.persistentModelCache = &opencodePersistentModelCache{Models: []core.ModelOption{{Name: "cached/model"}}, UpdatedAt: time.Now(), ProviderKey: providerAKey, ContextKey: modelDiscoveryContextKey(providerASnapshot)}
+	a.persistentModelCache = &codefreeoPersistentModelCache{Models: []core.ModelOption{{Name: "cached/model"}}, UpdatedAt: time.Now(), ProviderKey: providerAKey, ContextKey: modelDiscoveryContextKey(providerASnapshot)}
 
 	got := a.AvailableModels(context.Background())
 	if len(got) != 1 || got[0].Name != "cached/model" {
@@ -1040,7 +1040,7 @@ func TestAvailableModels_BackgroundRefreshPersistsProviderKey(t *testing.T) {
 
 func TestAvailableModels_BackgroundRefreshUsesProviderSnapshot(t *testing.T) {
 	dataDir := t.TempDir()
-	cachePath := opencodeProjectModelCachePath(dataDir, "demo")
+	cachePath := codefreeoProjectModelCachePath(dataDir, "demo")
 	countPath := filepath.Join(t.TempDir(), "refresh-count")
 	gatePath := filepath.Join(t.TempDir(), "refresh-ready")
 	bin := writeCountingModelsBin(t, countPath, gatePath, []string{"provider-a/model"}, "MODEL_DISCOVERY_TOKEN", 0)
@@ -1057,7 +1057,7 @@ func TestAvailableModels_BackgroundRefreshUsesProviderSnapshot(t *testing.T) {
 	providerAKey := providerCacheKeyOf(t, a)
 	providerASnapshot := a.modelDiscoverySnapshot()
 	writePersistentModelCacheWithSnapshot(t, cachePath, providerASnapshot, []core.ModelOption{{Name: "cached/model"}}, time.Now())
-	a.persistentModelCache = &opencodePersistentModelCache{Models: []core.ModelOption{{Name: "cached/model"}}, UpdatedAt: time.Now(), ProviderKey: providerAKey, ContextKey: modelDiscoveryContextKey(providerASnapshot)}
+	a.persistentModelCache = &codefreeoPersistentModelCache{Models: []core.ModelOption{{Name: "cached/model"}}, UpdatedAt: time.Now(), ProviderKey: providerAKey, ContextKey: modelDiscoveryContextKey(providerASnapshot)}
 
 	got := a.AvailableModels(context.Background())
 	if len(got) != 1 || got[0].Name != "cached/model" {
@@ -1079,7 +1079,7 @@ func TestAvailableModels_BackgroundRefreshUsesProviderSnapshot(t *testing.T) {
 
 func TestAvailableModels_IgnoresPersistentCacheForSameProviderNameDifferentConfig(t *testing.T) {
 	dataDir := t.TempDir()
-	cachePath := opencodeProjectModelCachePath(dataDir, "demo")
+	cachePath := codefreeoProjectModelCachePath(dataDir, "demo")
 	bin := writeCountingModelsBin(t, "", "", []string{"fresh/provider-a"}, "MODEL_DISCOVERY_TOKEN", 0)
 	a := &Agent{
 		cmd:            bin,
@@ -1097,7 +1097,7 @@ func TestAvailableModels_IgnoresPersistentCacheForSameProviderNameDifferentConfi
 	staleKey := providerCacheKeyOf(t, stale)
 	staleSnapshot := stale.modelDiscoverySnapshot()
 	writePersistentModelCacheWithSnapshot(t, cachePath, staleSnapshot, []core.ModelOption{{Name: "cached/stale"}}, time.Now())
-	a.persistentModelCache = &opencodePersistentModelCache{Models: []core.ModelOption{{Name: "cached/stale"}}, UpdatedAt: time.Now(), ProviderKey: staleKey, ContextKey: modelDiscoveryContextKey(staleSnapshot)}
+	a.persistentModelCache = &codefreeoPersistentModelCache{Models: []core.ModelOption{{Name: "cached/stale"}}, UpdatedAt: time.Now(), ProviderKey: staleKey, ContextKey: modelDiscoveryContextKey(staleSnapshot)}
 
 	got := a.AvailableModels(context.Background())
 	if len(got) != 1 || got[0].Name != "fresh/provider-a" {
@@ -1112,7 +1112,7 @@ func TestAvailableModels_IgnoresPersistentCacheForSameProviderNameDifferentConfi
 
 func TestAvailableModels_IgnoresPersistentCacheForWorkDirMismatch(t *testing.T) {
 	dataDir := t.TempDir()
-	cachePath := opencodeProjectModelCachePath(dataDir, "demo")
+	cachePath := codefreeoProjectModelCachePath(dataDir, "demo")
 	countPath := filepath.Join(t.TempDir(), "refresh-count")
 	workDirA := filepath.Join(t.TempDir(), "workspace-a")
 	workDirB := filepath.Join(t.TempDir(), "workspace-b")
@@ -1143,7 +1143,7 @@ func TestAvailableModels_IgnoresPersistentCacheForWorkDirMismatch(t *testing.T) 
 	}
 	staleSnapshot := stale.modelDiscoverySnapshot()
 	writePersistentModelCacheWithSnapshot(t, cachePath, staleSnapshot, []core.ModelOption{{Name: "cached/workspace-a"}}, time.Now())
-	a.persistentModelCache = &opencodePersistentModelCache{
+	a.persistentModelCache = &codefreeoPersistentModelCache{
 		Models:      []core.ModelOption{{Name: "cached/workspace-a"}},
 		UpdatedAt:   time.Now(),
 		ProviderKey: staleSnapshot.providerKey,

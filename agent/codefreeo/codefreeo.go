@@ -37,19 +37,19 @@ type Agent struct {
 	activeIdx            int
 	sessionEnv           []string
 	modelCachePath       string
-	persistentModelCache *opencodePersistentModelCache
+	persistentModelCache *codefreeoPersistentModelCache
 	refreshingModelCache bool
 	mu                   sync.RWMutex
 }
 
-type opencodePersistentModelCache struct {
+type codefreeoPersistentModelCache struct {
 	Models      []core.ModelOption `json:"models"`
 	UpdatedAt   time.Time          `json:"updated_at"`
 	ProviderKey string             `json:"provider_key,omitempty"`
 	ContextKey  string             `json:"context_key,omitempty"`
 }
 
-type opencodeModelDiscoverySnapshot struct {
+type codefreeoModelDiscoverySnapshot struct {
 	cmd         string
 	workDir     string
 	providerEnv []string
@@ -71,8 +71,8 @@ func New(opts map[string]any) (core.Agent, error) {
 	}
 	ccDataDir, _ := opts["cc_data_dir"].(string)
 	ccProject, _ := opts["cc_project"].(string)
-	modelCachePath := opencodeProjectModelCachePath(ccDataDir, ccProject)
-	persistentModelCache, err := loadOpencodePersistentModelCache(modelCachePath)
+	modelCachePath := codefreeoProjectModelCachePath(ccDataDir, ccProject)
+	persistentModelCache, err := loadCodefreeoPersistentModelCache(modelCachePath)
 	if err != nil {
 		slog.Warn("codefree-o: load persistent model cache failed", "path", modelCachePath, "err", err)
 	}
@@ -92,7 +92,7 @@ func New(opts map[string]any) (core.Agent, error) {
 	}, nil
 }
 
-func opencodeProjectModelCachePath(dataDir, project string) string {
+func codefreeoProjectModelCachePath(dataDir, project string) string {
 	if dataDir == "" || project == "" {
 		return ""
 	}
@@ -128,7 +128,7 @@ func sanitizeProjectCacheComponent(project string) string {
 	return strings.Trim(b.String(), "-")
 }
 
-func loadOpencodePersistentModelCache(path string) (*opencodePersistentModelCache, error) {
+func loadCodefreeoPersistentModelCache(path string) (*codefreeoPersistentModelCache, error) {
 	if path == "" {
 		return nil, nil
 	}
@@ -141,7 +141,7 @@ func loadOpencodePersistentModelCache(path string) (*opencodePersistentModelCach
 		return nil, err
 	}
 
-	var cache opencodePersistentModelCache
+	var cache codefreeoPersistentModelCache
 	if err := json.Unmarshal(data, &cache); err != nil {
 		return nil, err
 	}
@@ -223,7 +223,7 @@ func (a *Agent) configuredModels() []core.ModelOption {
 	return core.GetProviderModels(a.providers, a.activeIdx)
 }
 
-func (a *Agent) configuredModelsForSnapshot(snapshot opencodeModelDiscoverySnapshot) []core.ModelOption {
+func (a *Agent) configuredModelsForSnapshot(snapshot codefreeoModelDiscoverySnapshot) []core.ModelOption {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 	if len(a.providers) == 0 {
@@ -290,10 +290,10 @@ func (a *Agent) activeProviderKey() string {
 	return a.activeProviderKeyLocked()
 }
 
-func (a *Agent) modelDiscoverySnapshot() opencodeModelDiscoverySnapshot {
+func (a *Agent) modelDiscoverySnapshot() codefreeoModelDiscoverySnapshot {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
-	return opencodeModelDiscoverySnapshot{
+	return codefreeoModelDiscoverySnapshot{
 		cmd:         a.cmd,
 		workDir:     a.workDir,
 		providerEnv: append([]string(nil), a.providerEnvLocked()...),
@@ -302,14 +302,14 @@ func (a *Agent) modelDiscoverySnapshot() opencodeModelDiscoverySnapshot {
 	}
 }
 
-func modelDiscoveryContextKey(snapshot opencodeModelDiscoverySnapshot) string {
+func modelDiscoveryContextKey(snapshot codefreeoModelDiscoverySnapshot) string {
 	h := sha256.New()
 	mustWriteProviderSignaturePart(h, "provider_key", snapshot.providerKey)
 	mustWriteProviderSignaturePart(h, "work_dir", snapshot.workDir)
 	return hex.EncodeToString(h.Sum(nil)[:16])
 }
 
-func (a *Agent) persistentModelsForSnapshot(snapshot opencodeModelDiscoverySnapshot) []core.ModelOption {
+func (a *Agent) persistentModelsForSnapshot(snapshot codefreeoModelDiscoverySnapshot) []core.ModelOption {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 	if a.persistentModelCache == nil || len(a.persistentModelCache.Models) == 0 {
@@ -333,7 +333,7 @@ func (a *Agent) persistentModels() []core.ModelOption {
 	return a.persistentModelsForSnapshot(a.modelDiscoverySnapshot())
 }
 
-func (a *Agent) startPersistentModelRefresh(snapshot opencodeModelDiscoverySnapshot, allowColdStart bool) {
+func (a *Agent) startPersistentModelRefresh(snapshot codefreeoModelDiscoverySnapshot, allowColdStart bool) {
 	a.mu.Lock()
 	hasPersistentModels := a.persistentModelCache != nil && len(a.persistentModelCache.Models) > 0
 	if (!allowColdStart && !hasPersistentModels) || a.refreshingModelCache {
@@ -367,13 +367,13 @@ func (a *Agent) StartInitialModelRefresh() {
 	a.startPersistentModelRefresh(a.modelDiscoverySnapshot(), true)
 }
 
-func (a *Agent) storePersistentModelCache(snapshot opencodeModelDiscoverySnapshot, models []core.ModelOption) error {
+func (a *Agent) storePersistentModelCache(snapshot codefreeoModelDiscoverySnapshot, models []core.ModelOption) error {
 	models = normalizeModelOptions(models)
 	if len(models) == 0 {
 		return nil
 	}
 
-	cache := &opencodePersistentModelCache{
+	cache := &codefreeoPersistentModelCache{
 		Models:      models,
 		UpdatedAt:   time.Now(),
 		ProviderKey: snapshot.providerKey,
@@ -399,7 +399,7 @@ func (a *Agent) storePersistentModelCache(snapshot opencodeModelDiscoverySnapsho
 	return nil
 }
 
-func (a *Agent) discoverModelsWithSnapshot(ctx context.Context, snapshot opencodeModelDiscoverySnapshot) []core.ModelOption {
+func (a *Agent) discoverModelsWithSnapshot(ctx context.Context, snapshot codefreeoModelDiscoverySnapshot) []core.ModelOption {
 	c := exec.CommandContext(ctx, snapshot.cmd, "models")
 	c.Dir = snapshot.workDir
 	if len(snapshot.providerEnv) > 0 {
@@ -468,12 +468,12 @@ func (a *Agent) StartSession(ctx context.Context, sessionID string) (core.AgentS
 	}
 	a.mu.Unlock()
 
-	return newOpencodeSession(ctx, cmd, workDir, model, mode, sessionID, extraEnv)
+	return newCodefreeoSession(ctx, cmd, workDir, model, mode, sessionID, extraEnv)
 }
 
 // ListSessions runs `codefree-o session list` and parses the JSON output.
 func (a *Agent) ListSessions(_ context.Context) ([]core.AgentSessionInfo, error) {
-	return listOpencodeSessions(a.cmd, a.workDir)
+	return listCodefreeoSessions(a.cmd, a.workDir)
 }
 
 func (a *Agent) Stop() error { return nil }
@@ -598,15 +598,15 @@ func (a *Agent) providerEnvLocked() []string {
 
 // -- Session listing --
 
-// opencodeSessionEntry represents a session from `codefree-o session list` output.
-type opencodeSessionEntry struct {
+// codefreeoSessionEntry represents a session from `codefree-o session list` output.
+type codefreeoSessionEntry struct {
 	ID      string `json:"id"`
 	Title   string `json:"title"`
 	Updated int64  `json:"updated"` // Unix timestamp in milliseconds
 	Created int64  `json:"created"`
 }
 
-func listOpencodeSessions(cmd, workDir string) ([]core.AgentSessionInfo, error) {
+func listCodefreeoSessions(cmd, workDir string) ([]core.AgentSessionInfo, error) {
 	c := exec.Command(cmd, "session", "list", "--format", "json")
 	c.Dir = workDir
 
@@ -615,7 +615,7 @@ func listOpencodeSessions(cmd, workDir string) ([]core.AgentSessionInfo, error) 
 		return nil, fmt.Errorf("codefree-o: session list: %w", err)
 	}
 
-	var entries []opencodeSessionEntry
+	var entries []codefreeoSessionEntry
 	if err := json.Unmarshal(out, &entries); err != nil {
 		return nil, fmt.Errorf("codefree-o: parse session list: %w", err)
 	}
@@ -638,7 +638,7 @@ func listOpencodeSessions(cmd, workDir string) ([]core.AgentSessionInfo, error) 
 // querySessionMessageCounts uses the sqlite3 CLI to read message counts from
 // Codefree-O's local database. Returns an empty map on any failure.
 func querySessionMessageCounts() map[string]int {
-	dbPath := opencodeDBPath()
+	dbPath := codefreeoDBPath()
 	if dbPath == "" {
 		return nil
 	}
@@ -672,7 +672,7 @@ func querySessionMessageCounts() map[string]int {
 	return counts
 }
 
-func opencodeDBPath() string {
+func codefreeoDBPath() string {
 	if xdg := os.Getenv("XDG_DATA_HOME"); xdg != "" {
 		return filepath.Join(xdg, "codefree-o", "codefree-o.db")
 	}
