@@ -1266,7 +1266,7 @@ level = "info"
 name = "my-project"
 
 [projects.agent]
-type = "claudecode"   # "claudecode", "codex", "cursor", "gemini", "qoder", "opencode", or "iflow"
+type = "claudecode"   # "claudecode", "codex", "cursor", "gemini", "qoder", "opencode", "codefree-o", or "iflow"
 
 [projects.agent.options]
 work_dir = "/path/to/your/project"
@@ -1306,7 +1306,7 @@ func printUsage() {
  \___\__|      \___\___/|_| |_|_| |_|\___|\___|\__|  %s%s
 
   Bridge your messaging platforms to local AI coding agents.
-  Supports: Claude Code, Codex, Cursor, Gemini CLI, Qoder CLI, OpenCode
+  Supports: Claude Code, Codex, Cursor, Gemini CLI, Qoder CLI, OpenCode, Codefree-O
   Platforms: Feishu, Telegram, Slack, DingTalk, Discord, LINE, WeChat Work, Weixin, QQ, QQ Bot
 
   GitHub:  https://github.com/chenhg5/cc-connect

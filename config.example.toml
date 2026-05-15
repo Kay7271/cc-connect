@@ -1447,6 +1447,37 @@ app_secret = "your-feishu-app-secret"
 # token = "your-telegram-bot-token"
 
 # =============================================================================
+# Project 7: Using Codefree-O / 项目 7：使用 Codefree-O (uncomment to enable / 取消注释以启用)
+# =============================================================================
+# Requires: Codefree-O CLI
+# 需要安装：Codefree-O CLI
+# Uses `codefree-o run --format json` under the hood.
+# 底层使用 `codefree-o run --format json` 命令。
+#
+# [[projects]]
+# name = "my-codefree-o-project"
+#
+# [projects.agent]
+# type = "codefree-o"
+#
+# [projects.agent.options]
+# work_dir = "/path/to/project"
+# mode = "default"  # "default" | "yolo"
+#
+# Mode options / 模式说明:
+# - "default": Standard mode / 标准模式
+# - "yolo":    Auto-approve all tool calls / 自动批准所有工具调用
+#
+# Optional: specify a model (provider/model format) / 可选：指定模型
+# model = "anthropic/claude-sonnet-4-20250514"
+#
+# [[projects.platforms]]
+# type = "telegram"
+#
+# [projects.platforms.options]
+# token = "your-telegram-bot-token"
+
+# =============================================================================
 # Project: Devin CLI (Cognition, https://cli.devin.ai/) / 使用 Devin CLI
 # =============================================================================
 # Devin speaks the Agent Client Protocol (ACP) over stdio via its `devin acp`
